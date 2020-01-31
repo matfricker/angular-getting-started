@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 
 import { IProduct } from './product';
 
+import { ProductService } from './product.service';
+
 @Component({
     selector: 'pm-products',
     templateUrl: './product-list.component.html',
@@ -12,35 +14,44 @@ export class ProductListComponent implements OnInit {
     imageWidth: number = 50;
     imageMargin: number = 2;
     showImage: boolean = false;
-    listFilter: string = 'cart';
-    products: IProduct[] = [
-        {
-            "productId": 2,
-            "productName": "Garden Cart",
-            "productCode": "GNC-0098",
-            "releaseDate": "22 February 2007",
-            "description": "Generic garden card, 15 litre capacity",
-            "price": 29.99,
-            "starRating": 4.2,
-            "imageUrl": "assets/images/garden_cart.png"
-        },
-        {
-            "productId": 5,
-            "productName": "Hammer",
-            "productCode": "TBX-129",
-            "releaseDate": "2 December 2012",
-            "description": "Curved claw steel hammer",
-            "price": 5.59,
-            "starRating": 3.2,
-            "imageUrl": "assets/images/hammer.png"
-        }
-    ];
+    errorMessage: string;
+    
+    _listFilter: string;
+    get listFilter(): string {
+        return this._listFilter;
+    }
+    set listFilter(value: string) {
+        this._listFilter = value;
+        this.filteredProducts = this.listFilter ? this.performFilter(this.listFilter) : this.products;
+    }
+
+    filteredProducts: IProduct[] = [];
+    products: IProduct[] = [];
+
+    constructor (private productService: ProductService) { }
+
+    performFilter(filterBy: string) {
+        filterBy = filterBy.toLocaleLowerCase();
+        return this.products.filter((product: IProduct) => 
+            product.productName.toLocaleLowerCase().indexOf(filterBy) !== -1)
+    }
 
     toggleImage(): void {
         this.showImage = !this.showImage;
     }
 
     ngOnInit(): void {
-        console.log('In OnInit');
+        this.productService.getProducts()
+            .subscribe({
+                next: products => { 
+                    this.products = products;
+                    this.filteredProducts = this.products;
+                },
+                error: error => this.errorMessage = error
+            });
+    }
+
+    onRatingClicked(message: string): void {
+        this.pageTitle = 'Product List: ' + message;
     }
 }
